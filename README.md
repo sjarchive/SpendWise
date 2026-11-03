@@ -67,7 +67,3 @@ app/src/main/java/com/example/
 ```
 
 ---
-
-<div align="center">
-<sub>Built with Google AI Studio — <a href="https://ai.studio/apps/eb33357d-190e-4cb6-ac96-fe56ec5523a4">View original app</a></sub>
-</div>
