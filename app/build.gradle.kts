@@ -13,8 +13,8 @@ android {
     applicationId = "com.aistudio.spendwise.iuyclr"
     minSdk = 26
     targetSdk = 36
-    versionCode = 4
-    versionName = "v1.2"
+    versionCode = 5
+    versionName = "v1.3"
 
     // Package native libraries for arm64-v8a devices only
     ndk {
@@ -45,7 +45,9 @@ android {
   buildTypes {
     release {
       isCrunchPngs = false
-      isMinifyEnabled = false
+      // R8 code shrinking + resource shrinking (keeps debug builds unminified for debugging)
+      isMinifyEnabled = true
+      isShrinkResources = true
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
       // Do not remove or modify this signingConfig assignment. It is necessary for Android apps in
       // AI Studio.
