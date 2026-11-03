@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App Dark Background Colors matching Compose BackgroundDark -->
+    <color name="splash_background">#FF0F1512</color>
+    <color name="window_background">#FF0F1512</color>
+    <color name="emerald_primary">#FF6CDBAC</color>
+</resources>
