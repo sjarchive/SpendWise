@@ -13,8 +13,13 @@ android {
     applicationId = "com.aistudio.spendwise.iuyclr"
     minSdk = 26
     targetSdk = 36
-    versionCode = 3
-    versionName = "v1.1"
+    versionCode = 4
+    versionName = "v1.2"
+
+    // Package native libraries for arm64-v8a devices only
+    ndk {
+      abiFilters += "arm64-v8a"
+    }
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
