@@ -6,15 +6,15 @@ plugins {
 }
 
 android {
-  namespace = "com.example"
+  namespace = "com.spendwise.app"
   compileSdk { version = release(36) { minorApiLevel = 1 } }
 
   defaultConfig {
-    applicationId = "com.aistudio.spendwise.iuyclr"
+    applicationId = "com.spendwise.app"
     minSdk = 26
     targetSdk = 36
-    versionCode = 7
-    versionName = "v1.5"
+    versionCode = 8
+    versionName = "v1.6"
 
     // Package native libraries for arm64-v8a devices only
     ndk {

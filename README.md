@@ -75,9 +75,9 @@ over USB debugging — the same one-click loop AI Studio provided.
 ```bash
 ./gradlew installDebug        # builds + installs the debug APK to the connected phone
 # optional — launch the app:
-adb shell am start -n com.aistudio.spendwise.iuyclr/com.example.MainActivity
+adb shell am start -n com.spendwise.app/com.spendwise.app.MainActivity
 # optional — live logs while using the app:
-adb logcat --pid=$(adb shell pidof com.aistudio.spendwise.iuyclr)
+adb logcat --pid=$(adb shell pidof com.spendwise.app)
 ```
 
 ### Notes
