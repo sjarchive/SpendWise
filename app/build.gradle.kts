@@ -24,8 +24,11 @@ android {
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
 
-  // Do not remove or modify these signingConfigs. They are necessary for building, installing,
-  // and updating Android apps in AI Studio.
+  // Release signing comes from CI environment variables (GitHub Actions secrets:
+  // ANDROID_KEYSTORE_B64 + ANDROID_KEYSTORE_STORE_PASSWORD/KEY_PASSWORD).
+  // For local builds, place the keystore at the repo root as my-upload-key.jks and
+  // export the same env vars. The debug config uses debug.keystore (generated via
+  // keytool locally; CI generates a throwaway one per run).
   signingConfigs {
     create("release") {
       val keystorePath = System.getenv("KEYSTORE_PATH") ?: "${rootDir}/my-upload-key.jks"
@@ -49,13 +52,11 @@ android {
       isMinifyEnabled = true
       isShrinkResources = true
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-      // Do not remove or modify this signingConfig assignment. It is necessary for Android apps in
-      // AI Studio.
+      // Stable upload key so release builds can update-over-install existing installs.
       signingConfig = signingConfigs.getByName("release")
     }
     debug {
-      // Do not remove or modify this signingConfig assignment. It is necessary for Android apps in
-      // AI Studio.
+      // Fixed debug key so debug APKs are re-installable across runs.
       signingConfig = signingConfigs.getByName("debugConfig")
     }
   }
@@ -81,8 +82,6 @@ android {
   }
 }
 
-// Some unused dependencies are commented out below instead of being removed.
-// This makes it easy to add them back in the future if needed.
 dependencies {
   implementation(platform(libs.androidx.compose.bom))
   implementation(libs.androidx.activity.compose)
