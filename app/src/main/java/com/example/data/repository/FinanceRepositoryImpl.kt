@@ -9,11 +9,14 @@ import com.example.data.local.entity.CategoryEntity
 import com.example.data.local.entity.TransactionEntity
 import com.example.data.local.entity.relations.BudgetWithCategory
 import com.example.data.local.entity.relations.TransactionWithCategory
+import com.example.di.ApplicationScope
 import com.example.domain.model.TransactionType
 import com.example.domain.repository.FinanceRepository
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -23,7 +26,8 @@ class FinanceRepositoryImpl @Inject constructor(
     private val categoryDao: CategoryDao,
     private val transactionDao: TransactionDao,
     private val budgetDao: BudgetDao,
-    private val ioDispatcher: CoroutineDispatcher
+    private val ioDispatcher: CoroutineDispatcher,
+    @ApplicationScope private val applicationScope: CoroutineScope
 ) : FinanceRepository {
 
     /**
@@ -34,6 +38,26 @@ class FinanceRepositoryImpl @Inject constructor(
      */
     @Volatile
     private var seedingVerified = false
+
+    /**
+     * In-memory snapshot of the categories table, kept warm for the whole
+     * process by the collector started in [init]. Screen ViewModels read it
+     * synchronously via [peekCategoriesSnapshot] so category-backed forms
+     * render their final layout on the first frame — otherwise the chips
+     * (loaded asynchronously from Room) pop in a beat later and reflow the
+     * fields below them, which reads as a laggy, jumpy form.
+     */
+    @Volatile
+    private var categoriesSnapshot: List<CategoryEntity>? = null
+
+    init {
+        applicationScope.launch {
+            ensureDefaultCategoriesSeeded()
+            getAllCategories().collect { categoriesSnapshot = it }
+        }
+    }
+
+    override fun peekCategoriesSnapshot(): List<CategoryEntity>? = categoriesSnapshot
 
     // --- Categories ---
 

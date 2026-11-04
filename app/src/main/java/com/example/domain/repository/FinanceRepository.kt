@@ -12,6 +12,16 @@ interface FinanceRepository {
     // Categories
     fun getAllCategories(): Flow<List<CategoryEntity>>
     fun getCategoriesByType(type: TransactionType): Flow<List<CategoryEntity>>
+
+    /**
+     * Synchronous, possibly-stale snapshot of the whole categories table, or
+     * `null` until the first database read has completed. ViewModels read it at
+     * init so forms render with their final layout on the very first frame —
+     * without it, asynchronously-loaded category chips pop in a beat later and
+     * shove the fields below them (date, payment method, note) down the screen.
+     */
+    fun peekCategoriesSnapshot(): List<CategoryEntity>?
+
     fun getCategoryById(id: Long): Flow<CategoryEntity?>
     suspend fun getCategoryByIdSuspend(id: Long): CategoryEntity?
     suspend fun insertCategory(category: CategoryEntity): Long

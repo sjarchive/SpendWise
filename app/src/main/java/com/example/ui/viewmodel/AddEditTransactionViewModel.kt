@@ -104,21 +104,36 @@ class AddEditTransactionViewModel @Inject constructor(
 
     private fun loadCategoriesForType(type: TransactionType) {
         categoriesJob?.cancel()
+        // Apply the warm in-process snapshot (if the repository has finished
+        // its first DB read) synchronously so the first frame already shows
+        // the final chip layout — without this, the chips pop in once Room's
+        // async emission lands and shove the note field and other content
+        // below the category row down the screen. The live query below then
+        // takes over and keeps the list fresh.
+        applyCategories(
+            financeRepository.peekCategoriesSnapshot()
+                ?.filter { it.type == type }
+                .orEmpty()
+        )
         categoriesJob = viewModelScope.launch {
             financeRepository.getCategoriesByType(type).collect { categories ->
-                _uiState.update { state ->
-                    val currentSelection = state.selectedCategory
-                    val newSelection = if (currentSelection != null && categories.any { it.id == currentSelection.id }) {
-                        currentSelection
-                    } else {
-                        categories.firstOrNull()
-                    }
-                    state.copy(
-                        availableCategories = categories,
-                        selectedCategory = newSelection
-                    )
-                }
+                applyCategories(categories)
             }
+        }
+    }
+
+    private fun applyCategories(categories: List<CategoryEntity>) {
+        _uiState.update { state ->
+            val currentSelection = state.selectedCategory
+            val newSelection = if (currentSelection != null && categories.any { it.id == currentSelection.id }) {
+                currentSelection
+            } else {
+                categories.firstOrNull()
+            }
+            state.copy(
+                availableCategories = categories,
+                selectedCategory = newSelection
+            )
         }
     }
 
