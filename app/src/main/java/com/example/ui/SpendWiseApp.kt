@@ -1,12 +1,11 @@
 package com.example.ui
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -78,8 +77,8 @@ fun SpendWiseAppContent(
             modifier = Modifier.fillMaxSize(),
             contentWindowInsets = ScaffoldDefaults.contentWindowInsets,
             bottomBar = {
-                // Slide the bar away smoothly instead of removing it abruptly,
-                // which used to make the whole layout jump.
+                // Slide-in smoothly when returning to a top-level tab; the exit is
+                // intentionally instant (see below) so sub-screens get full height at once.
                 AnimatedVisibility(
                     visible = isTopLevelDestination,
                     enter = slideInVertically(
@@ -88,12 +87,12 @@ fun SpendWiseAppContent(
                     ) + fadeIn(
                         animationSpec = spring(stiffness = Spring.StiffnessMediumLow)
                     ),
-                    exit = slideOutVertically(
-                        targetOffsetY = { it },
-                        animationSpec = spring(stiffness = Spring.StiffnessMediumLow)
-                    ) + fadeOut(
-                        animationSpec = spring(stiffness = Spring.StiffnessMediumLow)
-                    )
+                    // Exit must be INSTANT. An animated exit keeps the bar occupying
+                    // layout space until the animation ends, so the incoming
+                    // sub-screen starts with a shorter content area and its bottom
+                    // content (e.g. the last category card) renders clipped for a
+                    // moment before "popping" to full size once the bar is removed.
+                    exit = ExitTransition.None
                 ) {
                     SpendWiseBottomBar(
                         currentRoute = currentRoute,

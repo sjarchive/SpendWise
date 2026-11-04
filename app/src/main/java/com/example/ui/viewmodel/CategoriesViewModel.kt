@@ -48,6 +48,15 @@ class CategoriesViewModel @Inject constructor(
             _uiState.update { it.copy(isLoading = true) }
             financeRepository.ensureDefaultCategoriesSeeded()
 
+            // Render the FIRST frame with the full list: the app-scoped snapshot
+            // (kept warm in FinanceRepositoryImpl.init) is applied synchronously
+            // so the last rows are never clipped or reflowed in a beat later when
+            // the Room emission lands (same pattern as AddEditTransactionViewModel).
+            val snapshot = financeRepository.peekCategoriesSnapshot()
+            if (!snapshot.isNullOrEmpty()) {
+                _uiState.update { it.copy(isLoading = false, categories = snapshot) }
+            }
+
             financeRepository.getAllCategories().collect { list ->
                 _uiState.update {
                     it.copy(

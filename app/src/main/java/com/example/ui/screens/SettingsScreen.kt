@@ -424,7 +424,11 @@ fun SettingsScreen(
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Image(
-                                    painter = painterResource(id = R.mipmap.ic_launcher),
+                                    // NOT R.mipmap.ic_launcher: with minSdk 26 that resolves to the
+                                    // adaptive-icon XML in mipmap-anydpi-v26, which painterResource
+                                    // cannot decode -> hard crash when this (lazily composed) About
+                                    // card scrolls into view. Use the plain PNG instead.
+                                    painter = painterResource(id = R.drawable.ic_about),
                                     contentDescription = "SpendWise app icon",
                                     modifier = Modifier.size(36.dp)
                                 )
@@ -448,7 +452,7 @@ fun SettingsScreen(
                                 color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
                             ) {
                                 Text(
-                                    text = "v1.4",
+                                    text = "v1.5",
                                     style = MaterialTheme.typography.labelMedium,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.primary,
