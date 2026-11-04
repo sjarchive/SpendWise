@@ -13,8 +13,8 @@ android {
     applicationId = "com.aistudio.spendwise.iuyclr"
     minSdk = 26
     targetSdk = 36
-    versionCode = 5
-    versionName = "v1.3"
+    versionCode = 6
+    versionName = "v1.4"
 
     // Package native libraries for arm64-v8a devices only
     ndk {

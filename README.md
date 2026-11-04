@@ -73,7 +73,7 @@ adb logcat --pid=$(adb shell pidof com.aistudio.spendwise.iuyclr)
 
 - The **debug** build is signed with your local `debug.keystore`, so **no GitHub
   secrets are needed** for testing. A debug build cannot update-over-install the
-  **release** APK (different signing keys) — if the v1.3 release is installed,
+  **release** APK (different signing keys) — if the release APK is installed,
   uninstall it first.
 - Local **release** builds require `KEYSTORE_PATH`, `STORE_PASSWORD`, `KEY_PASSWORD`
   environment variables — leave release/signing to CI.
