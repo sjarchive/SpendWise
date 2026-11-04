@@ -37,8 +37,8 @@ over USB debugging — the same one-click loop AI Studio provided.
 
 1. **Install [Android Studio](https://developer.android.com/studio)** — it bundles the
    JDK, Android SDK, and ADB, so nothing else is needed.
-2. **Clone this private repo:** in Android Studio use `File → New → Project from
-   Version Control`, paste the repo URL, and sign in with your GitHub account.
+2. **Clone this repo:** in Android Studio use `File → New → Project from
+   Version Control`, paste the repo URL (`https://github.com/sjarchive/SpendWise`).
    (CLI alternative: `gh repo clone sjarchive/SpendWise`.)
 3. **Unlock Developer options on the phone:** Settings → About phone → tap
    **Build number** 7×. Then in Settings → Developer options enable **USB debugging**.

@@ -105,6 +105,10 @@ jobs:
           fi
           cp app/build/outputs/apk/release/app-release.apk "SpendWise-${VERSION}-release.apk"
           cp app/build/outputs/apk/debug/app-debug.apk "SpendWise-${VERSION}-debug.apk"
+          # Version-less copies keep the evergreen "latest" permalink working:
+          # .../releases/latest/download/SpendWise-release.apk
+          cp app/build/outputs/apk/release/app-release.apk "SpendWise-release.apk"
+          cp app/build/outputs/apk/debug/app-debug.apk "SpendWise-debug.apk"
           {
             printf '%s\n' \
               'Two flavors are attached:' \
@@ -121,6 +125,8 @@ jobs:
           gh release create "$VERSION" \
             "SpendWise-${VERSION}-release.apk" \
             "SpendWise-${VERSION}-debug.apk" \
+            "SpendWise-release.apk" \
+            "SpendWise-debug.apk" \
             --target "$GITHUB_SHA" \
             --title "SpendWise ${VERSION}" \
             --notes-file notes.md
