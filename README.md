@@ -81,6 +81,10 @@ adb logcat --pid=$(adb shell pidof com.aistudio.spendwise.iuyclr)
   **Wireless debugging** → pair with your computer.
 - CI (`.github/workflows/build.yml`) remains the source of truth for signed release
   APKs; local builds are for day-to-day testing only.
+- **Releases are automatic — no tag pushing:** bump `versionCode`/`versionName` in
+  `app/build.gradle.kts`, push to `main`, and the same CI run tests, builds, and
+  publishes the GitHub Release (creating the `v*` tag for you) if that version
+  doesn't have a release yet.
 
 ## 📁 Project Structure
 
