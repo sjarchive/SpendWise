@@ -105,8 +105,8 @@ jobs:
           fi
           cp app/build/outputs/apk/release/app-release.apk "SpendWise-${VERSION}-release.apk"
           cp app/build/outputs/apk/debug/app-debug.apk "SpendWise-${VERSION}-debug.apk"
-          # Version-less copies keep the evergreen "latest" permalink working:
-          # .../releases/latest/download/SpendWise-release.apk
+          # Version-less copies for the evergreen "stable" shelf (see below):
+          # .../releases/download/stable/SpendWise-release.apk
           cp app/build/outputs/apk/release/app-release.apk "SpendWise-release.apk"
           cp app/build/outputs/apk/debug/app-debug.apk "SpendWise-debug.apk"
           {
@@ -116,7 +116,9 @@ jobs:
               '- **debug** — unminified, per-run debug key. For testing only.' \
               '' \
               'Requires a 64-bit ARM (arm64-v8a) device with Android 8.0+.'
-            PREV_TAG=$(gh release list --repo "$GITHUB_REPOSITORY" --limit 1 --json tagName -q '.[0].tagName' 2>/dev/null || true)
+            # Previous versioned release for the compare link — skip drafts and
+            # pre-releases so the evergreen "stable" shelf is never picked.
+            PREV_TAG=$(gh release list --repo "$GITHUB_REPOSITORY" --limit 20 --json tagName,isPrerelease,isDraft -q '[.[] | select(.isDraft == false and .isPrerelease == false)][0].tagName' 2>/dev/null || true)
             if [ -n "$PREV_TAG" ]; then
               printf '\n**Full changelog:** https://github.com/%s/compare/%s...%s\n' \
                 "$GITHUB_REPOSITORY" "$PREV_TAG" "$VERSION"
@@ -125,9 +127,19 @@ jobs:
           gh release create "$VERSION" \
             "SpendWise-${VERSION}-release.apk" \
             "SpendWise-${VERSION}-debug.apk" \
-            "SpendWise-release.apk" \
-            "SpendWise-debug.apk" \
             --target "$GITHUB_SHA" \
             --title "SpendWise ${VERSION}" \
             --notes-file notes.md
           echo "Published release $VERSION (tag created at ${GITHUB_SHA})."
+          # Refresh the evergreen "stable" shelf: a pre-release (so it never
+          # shows as the repo's Latest) holding fixed-name copies of the newest
+          # build, keeping .../releases/download/stable/SpendWise-<flavor>.apk
+          # valid across releases. --clobber replaces same-name assets.
+          gh release view stable --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1 || \
+            gh release create stable --repo "$GITHUB_REPOSITORY" \
+              --prerelease --target "$GITHUB_SHA" \
+              --title "Latest APK downloads (auto-updated)" \
+              --notes "Rolling download shelf — these files are overwritten with every release and always contain the newest build. Marked as a pre-release on purpose so it never shows up as the repo's Latest release."
+          gh release upload stable --repo "$GITHUB_REPOSITORY" --clobber \
+            "SpendWise-release.apk" "SpendWise-debug.apk"
+          echo "Refreshed the stable shelf with this build."

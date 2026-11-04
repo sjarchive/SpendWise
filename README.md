@@ -19,6 +19,17 @@ Track transactions, manage budgets, gain spending insights, and back up your dat
 - **Backup & Restore** — CSV export/import and local backup
 - **Material 3 Expressive UI** — animated charts, morphing buttons, haptic feedback
 
+## 📲 Install (prebuilt APK)
+
+No build needed — grab an APK straight from GitHub Releases. Both links are
+*evergreen*: they always serve the newest build.
+
+- **Recommended:** [`SpendWise-release.apk`](https://github.com/sjarchive/SpendWise/releases/download/stable/SpendWise-release.apk) — R8-minified, signed with the stable upload key
+- Testing only: [`SpendWise-debug.apk`](https://github.com/sjarchive/SpendWise/releases/download/stable/SpendWise-debug.apk) — unminified, per-run debug key
+
+Requires a 64-bit ARM (arm64-v8a) device with Android 8.0+. All versioned
+releases live on the [Releases page](https://github.com/sjarchive/SpendWise/releases/latest).
+
 ## 🏗 Tech Stack
 
 | Layer | Technology |
