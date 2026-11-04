@@ -2,7 +2,7 @@
 
 <img src="docs/icon.png" width="110" alt="SpendWise app icon"/>
 
-# SpendWise V3
+# SpendWise
 
 A modern Android personal-finance app built with **Kotlin** and **Jetpack Compose** (Material 3 Expressive).
 
