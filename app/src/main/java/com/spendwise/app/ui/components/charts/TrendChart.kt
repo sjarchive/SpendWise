@@ -255,6 +255,7 @@ fun TrendChart(
                 with(density) {
                     val widest = yAxisLayouts.maxOf { it.size.width }
                     (widest + 10.dp.roundToPx()).coerceIn(38.dp.roundToPx(), 64.dp.roundToPx())
+                        .toFloat()
                 }
             }
 
