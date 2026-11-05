@@ -250,4 +250,14 @@ class BudgetsViewModel @Inject constructor(
             financeRepository.deleteBudgetById(budgetId)
         }
     }
+
+    /** Removes the budget of the category currently picked in the dialog, then closes it. */
+    fun deleteCategoryBudgetFromDialog() {
+        val cat = _uiState.value.selectedCategoryForBudget ?: return
+        val existing = _uiState.value.categoryBudgets.firstOrNull { it.category.id == cat.id } ?: return
+        viewModelScope.launch {
+            financeRepository.deleteBudgetById(existing.budget.id)
+            _uiState.update { it.copy(showCategoryBudgetDialog = false) }
+        }
+    }
 }

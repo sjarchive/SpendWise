@@ -501,15 +501,7 @@ fun BudgetsScreen(
                 }
             },
             confirmButton = {
-                Button(
-                    onClick = viewModel::saveOverallBudget,
-                    modifier = Modifier.testTag("btn_confirm_overall_budget")
-                ) {
-                    Text("Save Budget")
-                }
-            },
-            dismissButton = {
-                Row {
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     if (uiState.overallBudget != null) {
                         TextButton(
                             onClick = viewModel::deleteOverallBudget,
@@ -520,6 +512,13 @@ fun BudgetsScreen(
                     }
                     TextButton(onClick = viewModel::closeOverallBudgetDialog) {
                         Text("Cancel")
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Button(
+                        onClick = viewModel::saveOverallBudget,
+                        modifier = Modifier.testTag("btn_confirm_overall_budget")
+                    ) {
+                        Text("Save")
                     }
                 }
             }
@@ -581,16 +580,28 @@ fun BudgetsScreen(
                 }
             },
             confirmButton = {
-                Button(
-                    onClick = viewModel::saveCategoryBudget,
-                    modifier = Modifier.testTag("btn_confirm_cat_budget")
-                ) {
-                    Text("Save")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = viewModel::closeCategoryBudgetDialog) {
-                    Text("Cancel")
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    val existingCatBudget = uiState.categoryBudgets.firstOrNull {
+                        it.category.id == uiState.selectedCategoryForBudget?.id
+                    }
+                    if (existingCatBudget != null) {
+                        TextButton(
+                            onClick = viewModel::deleteCategoryBudgetFromDialog,
+                            modifier = Modifier.testTag("btn_delete_cat_budget")
+                        ) {
+                            Text("Remove", color = MaterialTheme.colorScheme.error)
+                        }
+                    }
+                    TextButton(onClick = viewModel::closeCategoryBudgetDialog) {
+                        Text("Cancel")
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Button(
+                        onClick = viewModel::saveCategoryBudget,
+                        modifier = Modifier.testTag("btn_confirm_cat_budget")
+                    ) {
+                        Text("Save")
+                    }
                 }
             }
         )
