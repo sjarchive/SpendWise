@@ -317,8 +317,7 @@ fun BudgetsScreen(
                             Column(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(24.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally
+                                    .padding(24.dp)
                             ) {
                                 Text(
                                     text = "No category budgets configured yet",
