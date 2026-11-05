@@ -78,10 +78,15 @@ object DateUtils {
     fun formatCurrencyCompact(amount: Double, symbol: String = "₹"): String {
         val v = if (amount < 0) -amount else amount
         val rounded = round(v)
-        fun trimmed(text: String): String = if (text.endsWith(".0")) text.dropLast(2) else text
+        fun scaled(divisor: Double, suffix: String): String {
+            // Trim ".0" from the NUMBER before appending the suffix, so
+            // 1000.0 → "₹1k" (not "₹1.0k").
+            val text = String.format(Locale.US, "%.1f", rounded / divisor)
+            return "$symbol${if (text.endsWith(".0")) text.dropLast(2) else text}$suffix"
+        }
         return when {
-            rounded >= 1_000_000.0 -> "$symbol${trimmed(String.format(Locale.US, "%.1fM", rounded / 1_000_000.0))}"
-            rounded >= 1_000.0 -> "$symbol${trimmed(String.format(Locale.US, "%.1fk", rounded / 1_000.0))}"
+            rounded >= 1_000_000.0 -> scaled(1_000_000.0, "M")
+            rounded >= 1_000.0 -> scaled(1_000.0, "k")
             else -> "$symbol${rounded.toLong()}"
         }
     }
@@ -96,7 +101,7 @@ object DateUtils {
         val roughStep = maxValue / 3.0
         val magnitude = 10.0.pow(floor(log10(roughStep)))
         val multipliers = doubleArrayOf(1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0)
-        val step = multipliers.firstOrNull { it * magnitude >= roughStep } ?: 10.0 * magnitude
+        val step = (multipliers.firstOrNull { it * magnitude >= roughStep } ?: 10.0) * magnitude
         return step * 3.0
     }
 }

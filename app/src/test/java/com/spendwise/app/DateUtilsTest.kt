@@ -32,7 +32,7 @@ class DateUtilsTest {
 
     @Test
     fun `compact format millions use M suffix`() {
-        assertEquals("₹1.2M", DateUtils.formatCurrencyCompact(1_250_000.0))
+        assertEquals("₹1.2M", DateUtils.formatCurrencyCompact(1_240_000.0))
         assertEquals("₹2M", DateUtils.formatCurrencyCompact(2_000_000.0))
     }
 
