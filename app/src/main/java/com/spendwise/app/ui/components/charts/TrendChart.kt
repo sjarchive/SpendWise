@@ -44,6 +44,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
@@ -194,25 +195,66 @@ fun TrendChart(
             Spacer(modifier = Modifier.height(16.dp))
 
             // Canvas Chart Area
-            val maxAmount = (dataPoints.maxOfOrNull { it.amount } ?: 100.0).coerceAtLeast(10.0)
             val primaryColor = MaterialTheme.colorScheme.primary
             val surfaceColor = MaterialTheme.colorScheme.surface
             val guideLineColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-            val textColor = MaterialTheme.colorScheme.onSurfaceVariant
+            val axisTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+            val barValueColor = MaterialTheme.colorScheme.onSurface
             val textMeasurer = rememberTextMeasurer()
+            val density = LocalDensity.current
 
-            // Pre-measure axis labels OUTSIDE the draw pass. Measuring text on
+            // Round the scale up to a "nice" ceiling so the Y-axis ticks read
+            // clean values instead of ₹333-style fractions.
+            val niceMax = remember(dataPoints) {
+                DateUtils.niceAxisMax(
+                    (dataPoints.maxOfOrNull { it.amount } ?: 100.0).coerceAtLeast(10.0)
+                )
+            }
+
+            // Pre-measure ALL labels OUTSIDE the draw pass. Measuring text on
             // every animation frame caused visible jank while the chart grew.
-            val labelLayouts = remember(textMeasurer, dataPoints, textColor) {
+            val labelLayouts = remember(textMeasurer, dataPoints, axisTextColor) {
                 dataPoints.map { point ->
                     textMeasurer.measure(
                         text = point.label,
                         style = TextStyle(
                             fontSize = 11.sp,
-                            color = textColor,
+                            color = axisTextColor,
                             fontWeight = FontWeight.Medium
                         )
                     )
+                }
+            }
+
+            // Y-axis tick labels for the 4 guideline levels (top → bottom).
+            val yAxisLayouts = remember(textMeasurer, niceMax, axisTextColor, currencySymbol) {
+                (0..3).map { i ->
+                    textMeasurer.measure(
+                        text = DateUtils.formatCurrencyCompact(niceMax * (3 - i) / 3.0, currencySymbol),
+                        style = TextStyle(fontSize = 10.sp, color = axisTextColor)
+                    )
+                }
+            }
+
+            // Per-bar value labels (BAR mode only).
+            val barValueLayouts = remember(textMeasurer, dataPoints, barValueColor, currencySymbol) {
+                dataPoints.map { point ->
+                    textMeasurer.measure(
+                        text = DateUtils.formatCurrencyCompact(point.amount, currencySymbol),
+                        style = TextStyle(
+                            fontSize = 11.sp,
+                            color = barValueColor,
+                            fontWeight = FontWeight.Medium
+                        )
+                    )
+                }
+            }
+
+            // Left gutter sized to the widest Y label so text never overlaps the plot.
+            val leftGutter = remember(yAxisLayouts, density) {
+                with(density) {
+                    val widest = yAxisLayouts.maxOf { it.size.width }
+                    (widest + 10.dp.roundToPx()).coerceIn(38.dp.roundToPx(), 64.dp.roundToPx())
                 }
             }
 
@@ -230,27 +272,38 @@ fun TrendChart(
                     val count = dataPoints.size
                     if (count == 0) return@Canvas
 
-                    // Draw subtle horizontal guidelines
+                    val plotWidth = size.width - leftGutter
+                    val stepX = plotWidth / count
+
+                    // Horizontal guidelines with Y-axis value labels
                     val levels = 3
                     for (i in 0..levels) {
                         val y = topPadding + (chartHeight / levels) * i
                         drawLine(
                             color = guideLineColor,
-                            start = Offset(0f, y),
+                            start = Offset(leftGutter, y),
                             end = Offset(size.width, y),
                             strokeWidth = 1.dp.toPx()
                         )
-                    }
 
-                    val stepX = size.width / count
+                        // Tick label, right-aligned against the plot area
+                        val yLayout = yAxisLayouts[i]
+                        drawText(
+                            textLayoutResult = yLayout,
+                            topLeft = Offset(
+                                leftGutter - 6.dp.toPx() - yLayout.size.width,
+                                y - yLayout.size.height / 2f
+                            )
+                        )
+                    }
 
                     if (chartType == ChartType.BAR) {
                         val barWidth = (stepX * 0.48f).coerceIn(12.dp.toPx(), 36.dp.toPx())
 
                         dataPoints.forEachIndexed { index, point ->
                             val progressFactor = animatedProgress.value
-                            val barHeight = ((point.amount / maxAmount) * chartHeight * progressFactor).toFloat()
-                            val x = (index * stepX) + (stepX - barWidth) / 2f
+                            val barHeight = ((point.amount / niceMax) * chartHeight * progressFactor).toFloat()
+                            val x = leftGutter + (index * stepX) + (stepX - barWidth) / 2f
                             val y = topPadding + chartHeight - barHeight
 
                             // Gradient Bar
@@ -265,9 +318,21 @@ fun TrendChart(
                                 cornerRadius = CornerRadius(6.dp.toPx(), 6.dp.toPx())
                             )
 
+                            // Value label above the bar (hidden when it would
+                            // collide with its neighbours on narrow slots)
+                            val valueLayout = barValueLayouts[index]
+                            if (valueLayout.size.width <= stepX * 0.92f) {
+                                val valueX = leftGutter + (index * stepX) + (stepX - valueLayout.size.width) / 2f
+                                val valueY = (y - valueLayout.size.height - 3.dp.toPx()).coerceAtLeast(2.dp.toPx())
+                                drawText(
+                                    textLayoutResult = valueLayout,
+                                    topLeft = Offset(valueX, valueY)
+                                )
+                            }
+
                             // X-axis label (pre-measured)
                             val labelResult = labelLayouts[index]
-                            val labelX = (index * stepX) + (stepX - labelResult.size.width) / 2f
+                            val labelX = leftGutter + (index * stepX) + (stepX - labelResult.size.width) / 2f
                             val labelY = size.height - bottomPadding + 8.dp.toPx()
                             drawText(
                                 textLayoutResult = labelResult,
@@ -278,8 +343,8 @@ fun TrendChart(
                         // Line Chart
                         val linePoints = dataPoints.mapIndexed { index, point ->
                             val progressFactor = animatedProgress.value
-                            val pointHeight = ((point.amount / maxAmount) * chartHeight * progressFactor).toFloat()
-                            val x = (index * stepX) + (stepX / 2f)
+                            val pointHeight = ((point.amount / niceMax) * chartHeight * progressFactor).toFloat()
+                            val x = leftGutter + (index * stepX) + (stepX / 2f)
                             val y = topPadding + chartHeight - pointHeight
                             Offset(x, y)
                         }
@@ -330,7 +395,7 @@ fun TrendChart(
                                 )
 
                                 val labelResult = labelLayouts[index]
-                                val labelX = (index * stepX) + (stepX - labelResult.size.width) / 2f
+                                val labelX = leftGutter + (index * stepX) + (stepX - labelResult.size.width) / 2f
                                 val labelY = size.height - bottomPadding + 8.dp.toPx()
                                 drawText(
                                     textLayoutResult = labelResult,

@@ -7,6 +7,10 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import kotlin.math.floor
+import kotlin.math.log10
+import kotlin.math.pow
+import kotlin.math.round
 
 object DateUtils {
 
@@ -64,5 +68,35 @@ object DateUtils {
         } else {
             "$symbol${String.format(Locale.getDefault(), "%,.2f", amount)}"
         }
+    }
+
+    /**
+     * Compact amount for chart axes/labels: ₹450 / ₹1.2k / ₹1M (no paise).
+     * Rounds first so 999.6 renders as ₹1k, not ₹1000. Locale.US keeps the
+     * decimal separator a dot so the k/M suffix always reads correctly.
+     */
+    fun formatCurrencyCompact(amount: Double, symbol: String = "₹"): String {
+        val v = if (amount < 0) -amount else amount
+        val rounded = round(v)
+        fun trimmed(text: String): String = if (text.endsWith(".0")) text.dropLast(2) else text
+        return when {
+            rounded >= 1_000_000.0 -> "$symbol${trimmed(String.format(Locale.US, "%.1fM", rounded / 1_000_000.0))}"
+            rounded >= 1_000.0 -> "$symbol${trimmed(String.format(Locale.US, "%.1fk", rounded / 1_000.0))}"
+            else -> "$symbol${rounded.toLong()}"
+        }
+    }
+
+    /**
+     * Round a chart maximum up to 3 × a "nice" step (1/1.5/2/2.5/3/4/5/6/8 × 10^n)
+     * so Y-axis ticks land on clean values (₹200 / ₹400 / ₹600) instead of
+     * ₹333-style fractions. Always >= the data max, so no bar is clipped.
+     */
+    fun niceAxisMax(maxValue: Double): Double {
+        if (maxValue <= 0.0) return 10.0
+        val roughStep = maxValue / 3.0
+        val magnitude = 10.0.pow(floor(log10(roughStep)))
+        val multipliers = doubleArrayOf(1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0)
+        val step = multipliers.firstOrNull { it * magnitude >= roughStep } ?: 10.0 * magnitude
+        return step * 3.0
     }
 }
