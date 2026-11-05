@@ -452,7 +452,7 @@ fun SettingsScreen(
                                 color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
                             ) {
                                 Text(
-                                    text = "v1.6",
+                                    text = "v1.7",
                                     style = MaterialTheme.typography.labelMedium,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.primary,
