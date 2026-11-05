@@ -171,6 +171,13 @@ object CsvImportHelper {
                 val dateStr = if (dateCol >= 0 && dateCol < row.size) row[dateCol].trim() else ""
                 val timeStr = if (timeCol >= 0 && timeCol < row.size) row[timeCol].trim() else ""
                 val timestamp = parseDateTime(dateStr, timeStr)
+                if (timestamp == null) {
+                    // Do NOT silently import with today's date — that corrupts the
+                    // record's real date and the user never finds out. Skip the row
+                    // and surface it in the preview error list instead.
+                    errors.add("Row ${rowIdx + 1}: Unrecognized date '$dateStr'")
+                    continue
+                }
 
                 // Parse Payment Method
                 val methodStr = if (methodCol >= 0 && methodCol < row.size) row[methodCol].trim() else ""
@@ -238,7 +245,12 @@ object CsvImportHelper {
         }
     }
 
-    private fun parseDateTime(dateStr: String, timeStr: String): Long {
+    /**
+     * Parses date + time strings to epoch millis. Returns null when the date
+     * cannot be recognized (the caller reports it and skips the row) — a missing
+     * time alone still defaults to noon.
+     */
+    private fun parseDateTime(dateStr: String, timeStr: String): Long? {
         val zone = ZoneId.systemDefault()
 
         // 1. Check if dateStr itself is a raw epoch millis
@@ -250,18 +262,17 @@ object CsvImportHelper {
         var localDate: LocalDate? = null
         val cleanDate = dateStr.replace(",", " ").replace("\\s+".toRegex(), " ").trim()
 
-        for (pattern in datePatterns) {
-            try {
-                val formatter = DateTimeFormatter.ofPattern(pattern, Locale.ENGLISH)
-                localDate = LocalDate.parse(cleanDate, formatter)
-                break
-            } catch (_: Exception) {}
+        if (cleanDate.isNotBlank()) {
+            for (pattern in datePatterns) {
+                try {
+                    val formatter = DateTimeFormatter.ofPattern(pattern, Locale.ENGLISH)
+                    localDate = LocalDate.parse(cleanDate, formatter)
+                    break
+                } catch (_: Exception) {}
+            }
         }
 
-        if (localDate == null) {
-            // Fallback to today if unparseable
-            localDate = LocalDate.now(zone)
-        }
+        if (localDate == null) return null
 
         // 3. Parse LocalTime
         var localTime: LocalTime? = null

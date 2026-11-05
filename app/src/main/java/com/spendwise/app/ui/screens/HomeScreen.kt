@@ -62,6 +62,7 @@ import com.spendwise.app.ui.theme.expenseAccentColor
 import com.spendwise.app.ui.theme.expenseContainerColor
 import com.spendwise.app.ui.theme.incomeAccentColor
 import com.spendwise.app.ui.theme.incomeContainerColor
+import com.spendwise.app.ui.util.DateUtils
 import com.spendwise.app.ui.viewmodel.HomeViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -281,6 +282,44 @@ fun HomeScreen(
                                     }
                                 }
                             }
+
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            // Pace stats: burn rate so far + remaining month.
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column {
+                                    Text(
+                                        text = "Avg / day spend",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                                    )
+                                    Text(
+                                        text = DateUtils.formatCurrency(uiState.avgDailySpend, currencySymbol),
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                        modifier = Modifier.testTag("text_avg_daily_spend")
+                                    )
+                                }
+                                Column(horizontalAlignment = Alignment.End) {
+                                    Text(
+                                        text = "Days left in month",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                                    )
+                                    Text(
+                                        text = "${uiState.daysLeftInMonth}",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                        modifier = Modifier.testTag("text_days_left")
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -340,7 +379,7 @@ fun HomeScreen(
                                     Box(contentAlignment = Alignment.Center) {
                                         Icon(
                                             imageVector = Icons.Default.ReceiptLong,
-                                            contentDescription = "No transactions this month",
+                                            contentDescription = "No transactions yet",
                                             tint = MaterialTheme.colorScheme.primary,
                                             modifier = Modifier.size(36.dp)
                                         )
@@ -350,7 +389,7 @@ fun HomeScreen(
                                 Spacer(modifier = Modifier.height(16.dp))
 
                                 Text(
-                                    text = "No transactions this month",
+                                    text = "No transactions yet",
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold,
                                     textAlign = TextAlign.Center

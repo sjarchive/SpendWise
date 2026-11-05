@@ -38,7 +38,27 @@ data class AddEditTransactionUiState(
     val isDeleted: Boolean = false,
     val showDeleteConfirmDialog: Boolean = false,
     val showDatePicker: Boolean = false,
-    val showTimePicker: Boolean = false
+    val showTimePicker: Boolean = false,
+    /**
+     * True when the user has edited any field away from the loaded values.
+     * The screen uses it to warn before an accidental back-press discards
+     * a half-filled form. Auto-selected fields (e.g. the default category in
+     * add mode) never count as changes.
+     */
+    val hasUnsavedChanges: Boolean = false
+)
+
+/**
+ * The field values captured when the form finished loading. `categoryId == null`
+ * means the category selection is not tracked (add mode auto-selects one).
+ */
+private data class DraftSnapshot(
+    val amountText: String,
+    val note: String,
+    val type: TransactionType,
+    val paymentMethod: PaymentMethod,
+    val selectedDateTime: Long,
+    val categoryId: Long?
 )
 
 @HiltViewModel
@@ -57,6 +77,9 @@ class AddEditTransactionViewModel @Inject constructor(
      * / [AddEditTransactionUiState.selectedCategory] with the wrong type's data.
      */
     private var categoriesJob: Job? = null
+
+    /** Loaded form values; null until loadInitialData finishes. */
+    private var draftSnapshot: DraftSnapshot? = null
 
     init {
         val transactionId = savedStateHandle.get<Long>("transactionId") ?: -1L
@@ -87,12 +110,48 @@ class AddEditTransactionViewModel @Inject constructor(
             }
 
             loadCategoriesForType(_uiState.value.type)
+
+            // Capture the pristine form now that the edit-mode row (if any) is
+            // loaded. In add mode the category is auto-selected later, so it is
+            // not tracked — only genuine user edits set hasUnsavedChanges.
+            snapshotDraft()
+        }
+    }
+
+    private fun snapshotDraft() {
+        val s = _uiState.value
+        draftSnapshot = DraftSnapshot(
+            amountText = s.amountText,
+            note = s.note,
+            type = s.type,
+            paymentMethod = s.paymentMethod,
+            selectedDateTime = s.selectedDateTime,
+            categoryId = if (s.isEditMode) s.selectedCategory?.id else null
+        )
+    }
+
+    private fun isDirty(state: AddEditTransactionUiState): Boolean {
+        val snap = draftSnapshot ?: return false
+        if (state.amountText != snap.amountText) return true
+        if (state.note != snap.note) return true
+        if (state.type != snap.type) return true
+        if (state.paymentMethod != snap.paymentMethod) return true
+        if (state.selectedDateTime != snap.selectedDateTime) return true
+        if (snap.categoryId != null && state.selectedCategory?.id != snap.categoryId) return true
+        return false
+    }
+
+    /** Applies a state transformation and refreshes the dirty flag in one place. */
+    private fun mutate(transform: (AddEditTransactionUiState) -> AddEditTransactionUiState) {
+        _uiState.update { state ->
+            val next = transform(state)
+            next.copy(hasUnsavedChanges = isDirty(next))
         }
     }
 
     fun onTypeChange(newType: TransactionType) {
         if (_uiState.value.type == newType) return
-        _uiState.update {
+        mutate {
             it.copy(
                 type = newType,
                 selectedCategory = null,
@@ -145,7 +204,12 @@ class AddEditTransactionViewModel @Inject constructor(
         val parts = sanitized.split('.')
         if (parts.size == 2 && parts[1].length > 2) return
 
-        _uiState.update {
+        // Cap the integer part at 9 digits (₹999,999,999.99). Without this a
+        // pasted 20-digit string parsed to 1e20 and broke every downstream
+        // display / stat.
+        if (parts[0].length > 9) return
+
+        mutate {
             it.copy(
                 amountText = sanitized,
                 amountError = null
@@ -154,7 +218,7 @@ class AddEditTransactionViewModel @Inject constructor(
     }
 
     fun onCategorySelected(category: CategoryEntity) {
-        _uiState.update {
+        mutate {
             it.copy(
                 selectedCategory = category,
                 categoryError = null
@@ -163,7 +227,7 @@ class AddEditTransactionViewModel @Inject constructor(
     }
 
     fun onDateTimeSelected(timestamp: Long) {
-        _uiState.update {
+        mutate {
             it.copy(
                 selectedDateTime = timestamp
             )
@@ -172,12 +236,12 @@ class AddEditTransactionViewModel @Inject constructor(
 
     fun onNoteChange(newNote: String) {
         if (newNote.length <= 150) {
-            _uiState.update { it.copy(note = newNote) }
+            mutate { it.copy(note = newNote) }
         }
     }
 
     fun onPaymentMethodSelected(method: PaymentMethod) {
-        _uiState.update { it.copy(paymentMethod = method) }
+        mutate { it.copy(paymentMethod = method) }
     }
 
     fun setShowDatePicker(show: Boolean) {

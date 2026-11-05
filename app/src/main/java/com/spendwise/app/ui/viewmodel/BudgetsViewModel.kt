@@ -75,13 +75,18 @@ class BudgetsViewModel @Inject constructor(
             _uiState.update { it.copy(isLoading = true) }
             financeRepository.ensureDefaultCategoriesSeeded()
 
-            val (startOfMonth, endOfMonth) = DateUtils.getCurrentMonthRange()
-
             combine(
                 financeRepository.getAllBudgets(),
-                financeRepository.getTransactionsBetween(startOfMonth, endOfMonth),
+                // Full transaction list: the current-month window is filtered inside
+                // the combine lambda so it is recomputed on every emission (capturing
+                // it once kept showing the previous month after a month rollover).
+                financeRepository.getTransactionsWithCategory(),
                 financeRepository.getCategoriesByType(TransactionType.EXPENSE)
-            ) { budgets, transactions, categories ->
+            ) { budgets, allTransactions, categories ->
+                val (startOfMonth, endOfMonth) = DateUtils.getCurrentMonthRange()
+                val transactions = allTransactions.filter {
+                    it.transaction.dateTime in startOfMonth..endOfMonth
+                }
                 Triple(budgets, transactions, categories)
             }.collect { (budgets, transactions, categories) ->
                 val expenseTransactions = transactions.filter { it.transaction.type == TransactionType.EXPENSE }
@@ -185,6 +190,11 @@ class BudgetsViewModel @Inject constructor(
     fun onBudgetAmountChange(input: String) {
         val filtered = input.filter { it.isDigit() || it == '.' }
         if (filtered.count { it == '.' } > 1) return
+        // Same input contract as the Add-Transaction amount field: at most two
+        // decimals and a 9-digit integer part (caps at 999,999,999.99).
+        val parts = filtered.split('.')
+        if (parts.size == 2 && parts[1].length > 2) return
+        if (parts[0].length > 9) return
         _uiState.update { it.copy(budgetAmountInput = filtered, inputError = null) }
     }
 
@@ -200,9 +210,14 @@ class BudgetsViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            val existing = _uiState.value.overallBudget
+            // Read the existing budget straight from the database instead of the
+            // (possibly not-yet-loaded) UI state. With id = 0 the insert would
+            // silently create a SECOND overall-budget row — SQLite treats NULLs
+            // as distinct in the unique index, so nothing would stop it, and
+            // firstOrNull { categoryId == null } would then pick rows arbitrarily.
+            val existing = financeRepository.getOverallBudget().firstOrNull()
             val budget = BudgetEntity(
-                id = existing?.budgetId ?: 0,
+                id = existing?.id ?: 0,
                 categoryId = null,
                 monthlyAmount = amount,
                 month = 0,
@@ -231,9 +246,12 @@ class BudgetsViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            val existing = _uiState.value.categoryBudgets.firstOrNull { it.category.id == cat.id }
+            // DB-first upsert, same reasoning as saveOverallBudget: the UI state
+            // may not list the category's budget yet (slow first load), and an
+            // id = 0 insert would duplicate the row.
+            val existing = financeRepository.getBudgetForCategory(cat.id).firstOrNull()
             val budget = BudgetEntity(
-                id = existing?.budget?.id ?: 0,
+                id = existing?.id ?: 0,
                 categoryId = cat.id,
                 monthlyAmount = amount,
                 month = 0,

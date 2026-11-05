@@ -7,6 +7,7 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -25,6 +26,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.FilterListOff
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -70,6 +72,7 @@ import com.spendwise.app.ui.components.AnimatedTransactionCount
 import com.spendwise.app.ui.components.SwipeableTransactionItemCard
 import com.spendwise.app.ui.theme.CardShape
 import com.spendwise.app.ui.theme.PillShape
+import com.spendwise.app.ui.util.DateUtils
 import com.spendwise.app.ui.viewmodel.DateRangeFilter
 import com.spendwise.app.ui.viewmodel.TransactionsViewModel
 import kotlinx.coroutines.launch
@@ -124,7 +127,7 @@ fun TransactionsScreen(
                 onValueChange = viewModel::onSearchQueryChange,
                 placeholder = {
                     Text(
-                        text = "Search by note, category or payment",
+                        text = "Search note, category, amount or payment",
                         maxLines = 1,
                         softWrap = false,
                         overflow = TextOverflow.Ellipsis,
@@ -359,7 +362,14 @@ fun TransactionsScreen(
                 // Crossfade's overlay box, so the row painted underneath the
                 // first transaction card.
                 Column(modifier = Modifier.fillMaxSize()) {
-                    // Result count + swipe gesture hint (hint hides after first use)
+                    // Result count + filtered totals + sort control.
+                    val filteredIncome = uiState.filteredTransactions
+                        .filter { it.transaction.type == TransactionType.INCOME }
+                        .sumOf { it.transaction.amount }
+                    val filteredExpense = uiState.filteredTransactions
+                        .filter { it.transaction.type == TransactionType.EXPENSE }
+                        .sumOf { it.transaction.amount }
+
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -367,23 +377,54 @@ fun TransactionsScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        AnimatedTransactionCount(
-                            count = uiState.filteredTransactions.size,
-                            dataVersion = uiState.transactionsDataVersion,
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        AnimatedVisibility(
-                            visible = showSwipeHint,
-                            enter = fadeIn(),
-                            exit = fadeOut()
+                        Column(modifier = Modifier.weight(1f)) {
+                            AnimatedTransactionCount(
+                                count = uiState.filteredTransactions.size,
+                                dataVersion = uiState.transactionsDataVersion,
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            if (filteredIncome > 0.0 || filteredExpense > 0.0) {
+                                Text(
+                                    text = "In ${DateUtils.formatCurrency(filteredIncome, currencySymbol)} • Out ${DateUtils.formatCurrency(filteredExpense, currencySymbol)}",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.testTag("text_filtered_totals")
+                                )
+                            }
+                        }
+
+                        TextButton(
+                            onClick = viewModel::onSortCycle,
+                            contentPadding = PaddingValues(horizontal = 8.dp),
+                            modifier = Modifier.testTag("btn_sort_transactions")
                         ) {
+                            Icon(
+                                imageVector = Icons.Default.Sort,
+                                contentDescription = "Change sort order",
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                text = "Swipe right to edit • left to delete",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
+                                text = uiState.sortOrder.label,
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.SemiBold
                             )
                         }
+                    }
+
+                    // Swipe gesture hint (hides after the user's first swipe).
+                    AnimatedVisibility(
+                        visible = showSwipeHint,
+                        enter = fadeIn(),
+                        exit = fadeOut()
+                    ) {
+                        Text(
+                            text = "Swipe right to edit • left to delete",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
+                            modifier = Modifier.padding(horizontal = 24.dp)
+                        )
                     }
 
                     // Transaction List with Swipe Actions

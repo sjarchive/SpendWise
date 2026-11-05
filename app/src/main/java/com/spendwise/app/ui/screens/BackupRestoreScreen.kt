@@ -66,6 +66,7 @@ import com.spendwise.app.ui.theme.CardShape
 import com.spendwise.app.ui.theme.ExpenseRed
 import com.spendwise.app.ui.theme.IncomeGreen
 import com.spendwise.app.ui.theme.PillShape
+import com.spendwise.app.ui.theme.WarningAmber
 import com.spendwise.app.ui.util.CsvExportHelper
 import com.spendwise.app.ui.util.DateUtils
 import com.spendwise.app.ui.viewmodel.BackupRestoreUiState
@@ -529,6 +530,29 @@ fun BackupRestoreScreen(
                             }
                         }
                     }
+
+                    // Duplicate warning: re-importing a backup would double every
+                    // record — surface the overlap before the user confirms.
+                    if (currentPreview.duplicateCount > 0) {
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = WarningAmber.copy(alpha = 0.12f),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = "${currentPreview.duplicateCount} of ${result.validTransactions.size} records look identical to transactions you already have. Importing will add them again as new records.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.padding(10.dp)
+                            )
+                        }
+                    }
+
+                    Text(
+                        text = "Note: importing adds these as new records — existing transactions are never modified or replaced.",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
 
                     Text(
                         text = "Preview of items:",

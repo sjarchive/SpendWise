@@ -30,7 +30,13 @@ sealed interface BackupRestoreUiState {
     data object ReadingFile : BackupRestoreUiState
 
     @Immutable
-    data class Preview(val result: CsvParseResult, val fileName: String) : BackupRestoreUiState
+    data class Preview(
+        val result: CsvParseResult,
+        val fileName: String,
+        /** Rows that exactly match an existing transaction (date + amount +
+         *  type + category) — importing them again would create duplicates. */
+        val duplicateCount: Int = 0
+    ) : BackupRestoreUiState
 
     data object Importing : BackupRestoreUiState
 
@@ -89,7 +95,20 @@ class BackupRestoreViewModel @Inject constructor(
                         }
                         _uiState.value = BackupRestoreUiState.Error(errMsg)
                     } else {
-                        _uiState.value = BackupRestoreUiState.Preview(parseResult, fileName)
+                        // Flag rows identical to what is already stored so the
+                        // preview can warn before the user double-imports a file.
+                        val existing = allTransactions.value
+                        val duplicateCount = if (existing.isEmpty()) 0 else {
+                            parseResult.validTransactions.count { item ->
+                                existing.any { t ->
+                                    t.transaction.dateTime == item.dateTime &&
+                                    t.transaction.amount == item.amount &&
+                                    t.transaction.type == item.type &&
+                                    t.transaction.category.equals(item.categoryName, ignoreCase = true)
+                                }
+                            }
+                        }
+                        _uiState.value = BackupRestoreUiState.Preview(parseResult, fileName, duplicateCount)
                     }
                 } catch (e: Exception) {
                     _uiState.value = BackupRestoreUiState.Error(e.message ?: "Failed to read CSV file.")

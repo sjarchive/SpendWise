@@ -63,6 +63,14 @@ abstract class AppDatabase : RoomDatabase() {
                         db.execSQL(
                             "UPDATE OR IGNORE categories SET name = 'Pocket Money', icon = 'savings' WHERE name = 'Freelance'"
                         )
+                        // One budget per target. Legacy builds could insert duplicate
+                        // overall-budget rows (SQLite unique indexes treat NULL as
+                        // distinct, so nothing stopped a second categoryId=NULL row).
+                        // GROUP BY treats NULLs as one group, so this keeps the
+                        // lowest-id row for the overall budget AND for each category.
+                        db.execSQL(
+                            "DELETE FROM budgets WHERE id NOT IN (SELECT MIN(id) FROM budgets GROUP BY categoryId)"
+                        )
                     }
                 })
                 .fallbackToDestructiveMigration(false)

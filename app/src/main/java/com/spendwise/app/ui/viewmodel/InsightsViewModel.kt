@@ -70,16 +70,23 @@ class InsightsViewModel @Inject constructor(
             _uiState.update { it.copy(isLoading = true) }
             financeRepository.ensureDefaultCategoriesSeeded()
 
-            val (startOfMonth, endOfMonth) = DateUtils.getCurrentMonthRange()
             var previousTransactions: List<com.spendwise.app.data.local.entity.relations.TransactionWithCategory>? = null
 
             combine(
-                financeRepository.getTransactionsBetween(startOfMonth, endOfMonth),
+                // Full transaction list: the current-month window is filtered inside
+                // the combine lambda so it is recomputed on every emission. A captured
+                // once-at-init getTransactionsBetween(start, end) kept showing the
+                // previous month after a month rollover while the process stayed alive.
                 financeRepository.getTransactionsWithCategory(),
                 financeRepository.getAllCategories(),
                 financeRepository.getAllBudgets(),
                 _trendPeriod
-            ) { monthTransactions, allTransactions, categories, budgets, period ->
+            ) { allTransactions, categories, budgets, period ->
+                val (startOfMonth, endOfMonth) = DateUtils.getCurrentMonthRange()
+                val monthTransactions = allTransactions.filter {
+                    it.transaction.dateTime in startOfMonth..endOfMonth
+                }
+
                 val isDataMutation = previousTransactions != null && previousTransactions != allTransactions
                 previousTransactions = allTransactions
 

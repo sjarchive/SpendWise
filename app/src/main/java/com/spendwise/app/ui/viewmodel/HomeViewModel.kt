@@ -29,6 +29,10 @@ data class HomeUiState(
     val recentTransactions: List<TransactionWithCategory> = emptyList(),
     val groupedTransactions: Map<String, List<TransactionWithCategory>> = emptyMap(),
     val currentMonthLabel: String = "",
+    /** Average spent per day so far this month (expense / days elapsed). */
+    val avgDailySpend: Double = 0.0,
+    /** Calendar days remaining in the current month (0 on the last day). */
+    val daysLeftInMonth: Int = 0,
     val errorMessage: String? = null,
     /**
      * Incremented only when transactions data actually changes (add / edit / delete),
@@ -50,6 +54,8 @@ class HomeViewModel @Inject constructor(
     private var dashboardJob: Job? = null
 
     init {
+        // First-frame label; refreshed on every data emission so the header
+        // stays correct if the process survives across a month boundary.
         val monthLabel = LocalDate.now().format(DateTimeFormatter.ofPattern("MMMM yyyy", Locale.getDefault()))
         _uiState.update { it.copy(currentMonthLabel = monthLabel) }
         loadDashboardData()
@@ -61,7 +67,6 @@ class HomeViewModel @Inject constructor(
             _uiState.update { it.copy(isLoading = true) }
             financeRepository.ensureDefaultCategoriesSeeded()
 
-            val (startOfMonth, endOfMonth) = DateUtils.getCurrentMonthRange()
             var previousTransactions: List<TransactionWithCategory>? = null
 
             financeRepository.getTransactionsWithCategory()
@@ -74,6 +79,16 @@ class HomeViewModel @Inject constructor(
                     }
                 }
                 .collect { allTransactions ->
+                    // Recomputed on EVERY emission: capturing the range once at
+                    // init kept showing the previous month's numbers when the
+                    // process survived across a month rollover (app in recents
+                    // overnight on the 1st).
+                    val (startOfMonth, endOfMonth) = DateUtils.getCurrentMonthRange()
+                    val today = LocalDate.now()
+                    val monthLabel = today.format(
+                        DateTimeFormatter.ofPattern("MMMM yyyy", Locale.getDefault())
+                    )
+
                     val currentMonthTransactions = allTransactions.filter {
                         it.transaction.dateTime in startOfMonth..endOfMonth
                     }
@@ -87,6 +102,11 @@ class HomeViewModel @Inject constructor(
                         .sumOf { it.transaction.amount }
 
                     val balance = income - expense
+
+                    // Pace stats: burn rate so far and how much month is left.
+                    val dayOfMonth = today.dayOfMonth
+                    val avgDailySpend = if (dayOfMonth > 0) expense / dayOfMonth else 0.0
+                    val daysLeftInMonth = today.lengthOfMonth() - dayOfMonth
 
                     val recent = allTransactions.take(50)
                     val grouped = recent.groupBy { transactionWithCategory ->
@@ -109,6 +129,9 @@ class HomeViewModel @Inject constructor(
                             totalExpense = expense,
                             recentTransactions = recent,
                             groupedTransactions = grouped,
+                            currentMonthLabel = monthLabel,
+                            avgDailySpend = avgDailySpend,
+                            daysLeftInMonth = daysLeftInMonth,
                             transactionsDataVersion = newVersion,
                             errorMessage = null
                         )

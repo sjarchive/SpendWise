@@ -455,7 +455,11 @@ fun CategoriesManagementScreen(
         AlertDialog(
             onDismissRequest = viewModel::cancelDelete,
             title = { Text("Delete Category") },
-            text = { Text("Are you sure you want to delete '${target.name}'? Existing transactions in this category will be preserved.") },
+            text = {
+                Text(
+                    "Are you sure you want to delete '${target.name}'? Its existing transactions will be moved to a default category, and any budget set for it will also be removed."
+                )
+            },
             confirmButton = {
                 TextButton(
                     onClick = viewModel::confirmDeleteCategory,

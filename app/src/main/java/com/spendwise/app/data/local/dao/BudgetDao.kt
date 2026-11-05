@@ -20,10 +20,13 @@ interface BudgetDao {
     @Query("SELECT * FROM budgets")
     fun getBudgetsWithCategory(): Flow<List<BudgetWithCategory>>
 
-    @Query("SELECT * FROM budgets WHERE categoryId IS NULL LIMIT 1")
+    // ORDER BY id makes the LIMIT 1 deterministic — without it SQLite may return
+    // any matching row, which made upserts target an unpredictable budget when
+    // duplicate rows existed.
+    @Query("SELECT * FROM budgets WHERE categoryId IS NULL ORDER BY id LIMIT 1")
     fun getOverallBudget(): Flow<BudgetEntity?>
 
-    @Query("SELECT * FROM budgets WHERE categoryId = :categoryId LIMIT 1")
+    @Query("SELECT * FROM budgets WHERE categoryId = :categoryId ORDER BY id LIMIT 1")
     fun getBudgetForCategory(categoryId: Long): Flow<BudgetEntity?>
 
     @Query("SELECT * FROM budgets WHERE id = :id")

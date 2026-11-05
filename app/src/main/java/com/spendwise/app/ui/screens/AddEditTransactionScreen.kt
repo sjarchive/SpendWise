@@ -56,7 +56,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
@@ -133,8 +136,22 @@ fun AddEditTransactionScreen(
         onNavigateBack()
     }
 
+    var showDiscardDialog by rememberSaveable { mutableStateOf(false) }
+
+    // Leaving with unsaved edits (and no save/delete in flight) asks for
+    // confirmation — previously a stray back-press instantly destroyed a
+    // half-filled form.
+    val attemptBack = {
+        val s = uiState
+        if (s.hasUnsavedChanges && !s.isSaved && !s.isDeleting) {
+            showDiscardDialog = true
+        } else {
+            handleBack()
+        }
+    }
+
     BackHandler {
-        handleBack()
+        attemptBack()
     }
 
     DisposableEffect(Unit) {
@@ -188,7 +205,7 @@ fun AddEditTransactionScreen(
             },
             navigationIcon = {
                 IconButton(
-                    onClick = handleBack,
+                    onClick = attemptBack,
                     modifier = Modifier.testTag("btn_back")
                 ) {
                     Icon(
@@ -597,6 +614,16 @@ fun AddEditTransactionScreen(
                         value = uiState.note,
                         onValueChange = viewModel::onNoteChange,
                         placeholder = { Text("What was this transaction for?") },
+                        supportingText = {
+                            // Progressive counter: only appears once the note gets
+                            // close to the 150-char limit.
+                            if (uiState.note.length > 100) {
+                                Text(
+                                    text = "${uiState.note.length} / 150",
+                                    style = MaterialTheme.typography.labelSmall
+                                )
+                            }
+                        },
                         modifier = Modifier
                             .fillMaxWidth()
                             .testTag("input_note"),
@@ -705,6 +732,31 @@ fun AddEditTransactionScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     TimePicker(state = timePickerState)
+                }
+            }
+        )
+    }
+
+    // Discard Unsaved Changes Dialog
+    if (showDiscardDialog) {
+        AlertDialog(
+            onDismissRequest = { showDiscardDialog = false },
+            title = { Text("Discard changes?") },
+            text = { Text("You have unsaved changes. If you leave now, they will be lost.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDiscardDialog = false
+                        handleBack()
+                    },
+                    modifier = Modifier.testTag("btn_confirm_discard")
+                ) {
+                    Text("Discard", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDiscardDialog = false }) {
+                    Text("Keep Editing")
                 }
             }
         )

@@ -110,6 +110,10 @@ class CategoriesViewModel @Inject constructor(
     }
 
     fun onNameChange(name: String) {
+        // 30-char cap: longer names wrapped/overflowed the category chips and
+        // dialog, and the note field already had its own limit — names deserve
+        // a tighter one.
+        if (name.length > 30) return
         _uiState.update {
             it.copy(
                 nameInput = name,
