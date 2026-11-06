@@ -19,7 +19,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.ColorLens
 import androidx.compose.material.icons.filled.CurrencyExchange
@@ -75,7 +74,6 @@ fun SettingsScreen(
     currentCurrencyName: String,
     onCurrencySelected: (String, String) -> Unit,
     onNavigateToCategories: () -> Unit,
-    onNavigateToBudgets: () -> Unit,
     onNavigateToBackupRestore: () -> Unit,
     transactions: List<TransactionWithCategory> = emptyList(),
     modifier: Modifier = Modifier
@@ -318,7 +316,10 @@ fun SettingsScreen(
                 }
             }
 
-            // Card 4: Categories & Budgets Quick Management
+            // Card 4: Categories Quick Management
+            // (Budgets & Spending Limits entry removed — budget management is
+            // reachable from the Insights tab's "View Limits" button, so the
+            // Settings duplicate was dropped to avoid duplication.)
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -328,42 +329,6 @@ fun SettingsScreen(
                     )
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        // Budgets Entry
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(12.dp))
-                                .clickable(onClick = onNavigateToBudgets)
-                                .padding(12.dp)
-                                .testTag("btn_manage_budgets_setting"),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    imageVector = Icons.Default.AccountBalanceWallet,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(22.dp)
-                                )
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Column {
-                                    Text(
-                                        text = "Budgets & Spending Limits",
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                    Text(
-                                        text = "Set overall and category 80% / 100% alert thresholds",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(6.dp))
-
                         // Categories Entry
                         Row(
                             modifier = Modifier

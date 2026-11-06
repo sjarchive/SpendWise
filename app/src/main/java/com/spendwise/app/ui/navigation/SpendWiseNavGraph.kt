@@ -196,9 +196,6 @@ fun SpendWiseNavGraph(
                 onNavigateToCategories = {
                     navController.navigate(Screen.Categories.route)
                 },
-                onNavigateToBudgets = {
-                    navController.navigate(Screen.Budgets.route)
-                },
                 onNavigateToBackupRestore = {
                     navController.navigate(Screen.BackupRestore.route)
                 },

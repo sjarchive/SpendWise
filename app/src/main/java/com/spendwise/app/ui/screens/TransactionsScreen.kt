@@ -374,7 +374,7 @@ fun TransactionsScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 24.dp, vertical = 4.dp),
+                            .padding(horizontal = 20.dp, vertical = 4.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -415,6 +415,9 @@ fun TransactionsScreen(
                     }
 
                     // Swipe gesture hint (hides after the user's first swipe).
+                    // Aligned to the same 20.dp gutter as the card list below and
+                    // given bottom padding so it doesn't sit flush against the
+                    // first transaction card.
                     AnimatedVisibility(
                         visible = showSwipeHint,
                         enter = fadeIn(),
@@ -424,7 +427,11 @@ fun TransactionsScreen(
                             text = "Swipe right to edit • left to delete",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
-                            modifier = Modifier.padding(horizontal = 24.dp)
+                            modifier = Modifier.padding(
+                                start = 20.dp,
+                                end = 20.dp,
+                                bottom = 10.dp
+                            )
                         )
                     }
 
