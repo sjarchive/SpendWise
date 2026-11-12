@@ -13,8 +13,8 @@ android {
     applicationId = "com.spendwise.app"
     minSdk = 26
     targetSdk = 36
-    versionCode = 16
-    versionName = "v1.10"
+    versionCode = 17
+    versionName = "v1.11"
 
     // Package native libraries for arm64-v8a devices only
     ndk {
