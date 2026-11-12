@@ -12,8 +12,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ScaffoldDefaults
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -66,6 +69,14 @@ fun SpendWiseAppContent(
         dynamicColor = dynamicColorEnabled
     ) {
         val navController = rememberNavController()
+
+        // Single app-level snackbar host. The "Add transaction" FAB lives in THIS outer
+        // Scaffold, so the snackbar host must too: a single M3 Scaffold automatically
+        // stacks a visible snackbar ABOVE the FAB (ScaffoldLayout adds the FAB's height
+        // + spacing to the snackbar's bottom offset). When the host used to live inside
+        // the screen-level Scaffold instead, that interplay was invisible to the outer
+        // Scaffold and the FAB simply painted over the snackbar's Undo action.
+        val snackbarHostState = remember { SnackbarHostState() }
         val navBackStackEntry by navController.currentBackStackEntryAsState()
         val currentRoute = navBackStackEntry?.destination?.route
 
@@ -108,6 +119,9 @@ fun SpendWiseAppContent(
                     )
                 }
             },
+            snackbarHost = {
+                SnackbarHost(hostState = snackbarHostState)
+            },
             floatingActionButton = {
                 SpendWiseExtendedFab(
                     visible = showFab,
@@ -127,6 +141,7 @@ fun SpendWiseAppContent(
                 currencyName = currencyName,
                 onCurrencySelected = onCurrencySelected,
                 allTransactions = allTransactions,
+                snackbarHostState = snackbarHostState,
                 modifier = Modifier
                     .padding(innerPadding)
                     .consumeWindowInsets(innerPadding)

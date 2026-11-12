@@ -212,10 +212,14 @@ fun SettingsScreen(
 
             // Card 2: Currency Preferences (Default ₹)
             item {
+                // Card(onClick), NOT Modifier.clickable: a clickable on the Card's
+                // modifier sits outside the Card's internal clip(shape), so the press
+                // highlight ignored the rounded corners and showed square edges.
+                // The Card(onClick) overload clips first — highlight follows CardShape.
                 Card(
+                    onClick = { showCurrencyDialog = true },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { showCurrencyDialog = true }
                         .testTag("card_currency_setting"),
                     shape = CardShape,
                     colors = CardDefaults.cardColors(
@@ -267,12 +271,13 @@ fun SettingsScreen(
                 }
             }
 
-            // Card 3: Backup & Restore
+            // Card 3: Backup & Restore (same rounded-highlight Card(onClick) pattern
+            // as Card 2 — the highlight must follow CardShape, not the card's bounds)
             item {
                 Card(
+                    onClick = onNavigateToBackupRestore,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable(onClick = onNavigateToBackupRestore)
                         .testTag("card_backup_restore"),
                     shape = CardShape,
                     colors = CardDefaults.cardColors(
@@ -319,48 +324,44 @@ fun SettingsScreen(
             // Card 4: Categories Quick Management
             // (Budgets & Spending Limits entry removed — budget management is
             // reachable from the Insights tab's "View Limits" button, so the
-            // Settings duplicate was dropped to avoid duplication.)
+            // Settings duplicate was dropped to avoid duplication. The leftover
+            // wrapper Column + inner padded Row are gone too: with a single entry
+            // the card is now one clickable row, padded 20dp like Cards 2/3.)
             item {
                 Card(
-                    modifier = Modifier.fillMaxWidth(),
+                    onClick = onNavigateToCategories,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("card_manage_categories"),
                     shape = CardShape,
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
                     )
                 ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        // Categories Entry
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(12.dp))
-                                .clickable(onClick = onNavigateToCategories)
-                                .padding(12.dp)
-                                .testTag("card_manage_categories"),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    imageVector = Icons.Default.Category,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(22.dp)
-                                )
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Column {
-                                    Text(
-                                        text = "Manage Categories",
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                    Text(
-                                        text = "Custom expense & income categories, icons & colors",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                            }
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(20.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Category,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(22.dp)
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text(
+                                text = "Manage Categories",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = "Custom expense & income categories, icons & colors",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
                     }
                 }

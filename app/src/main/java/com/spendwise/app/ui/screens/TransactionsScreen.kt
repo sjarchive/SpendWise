@@ -42,7 +42,6 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
@@ -53,7 +52,6 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -83,12 +81,15 @@ import kotlinx.coroutines.launch
 fun TransactionsScreen(
     onAddTransaction: () -> Unit,
     onEditTransaction: (Long) -> Unit,
+    // App-level host state (owned by SpendWiseApp's outer Scaffold). The host must
+    // live next to the "Add transaction" FAB so M3 Scaffold stacks the snackbar
+    // above the FAB — with a screen-local host the FAB painted over the Undo action.
+    snackbarHostState: SnackbarHostState,
     modifier: Modifier = Modifier,
     currencySymbol: String = "₹",
     viewModel: TransactionsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
 
     // Show the swipe gesture hint only until the user performs their first swipe.
@@ -98,9 +99,9 @@ fun TransactionsScreen(
         modifier = modifier
             .fillMaxSize()
             .testTag("transactions_screen"),
-        snackbarHost = {
-            SnackbarHost(hostState = snackbarHostState)
-        },
+        // No snackbarHost slot here: the host lives in the app-level Scaffold
+        // (SpendWiseApp) next to the "Add transaction" FAB, so a visible snackbar
+        // is stacked ABOVE the FAB instead of the FAB painting over its Undo action.
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         containerColor = Color.Transparent
     ) { innerPadding ->

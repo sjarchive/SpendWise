@@ -8,6 +8,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
@@ -92,6 +93,9 @@ fun SpendWiseNavGraph(
     currencyName: String,
     onCurrencySelected: (String, String) -> Unit,
     allTransactions: List<TransactionWithCategory> = emptyList(),
+    // The app-level snackbar host state (host lives in SpendWiseApp's outer Scaffold,
+    // next to the FAB, so snackbars stack above it instead of underneath it).
+    snackbarHostState: SnackbarHostState,
     modifier: Modifier = Modifier
 ) {
     NavHost(
@@ -162,7 +166,8 @@ fun SpendWiseNavGraph(
                 },
                 onEditTransaction = { transactionId ->
                     navController.navigate(Screen.AddTransaction.createRoute(transactionId))
-                }
+                },
+                snackbarHostState = snackbarHostState
             )
         }
 
