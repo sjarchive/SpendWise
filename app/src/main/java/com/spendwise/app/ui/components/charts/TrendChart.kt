@@ -319,10 +319,12 @@ fun TrendChart(
                                 cornerRadius = CornerRadius(6.dp.toPx(), 6.dp.toPx())
                             )
 
-                            // Value label above the bar (hidden when it would
-                            // collide with its neighbours on narrow slots)
+                            // Value label above the bar (hidden when there is
+                            // nothing to report — a ₹0 above an empty day is
+                            // just clutter — or when it would collide with
+                            // its neighbours on narrow slots)
                             val valueLayout = barValueLayouts[index]
-                            if (valueLayout.size.width <= stepX * 0.92f) {
+                            if (point.amount > 0.0 && valueLayout.size.width <= stepX * 0.92f) {
                                 val valueX = leftGutter + (index * stepX) + (stepX - valueLayout.size.width) / 2f
                                 val valueY = (y - valueLayout.size.height - 3.dp.toPx()).coerceAtLeast(2.dp.toPx())
                                 drawText(
