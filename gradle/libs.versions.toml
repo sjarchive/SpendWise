@@ -10,7 +10,10 @@ lifecycleRuntimeCompose = "2.8.7"
 activityCompose = "1.10.1"
 kotlin = "2.2.10"
 composeBom = "2024.09.00"
-googleDevtoolsKsp = "2.3.5"
+# 2.3.12: fixes the 2.3.5 CI-only AWT NPE (google/ksp#2763) + AGP-9 built-in-Kotlin
+# fixes. Do NOT jump to 2.3.13: it ships an open concurrent-execution regression
+# (google/ksp#3286) pending a patched release.
+googleDevtoolsKsp = "2.3.12"
 navigationCompose = "2.8.9"
 roomRuntime = "2.7.0"
 roomKtx = "2.7.0"

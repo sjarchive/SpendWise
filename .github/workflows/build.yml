@@ -32,7 +32,7 @@ jobs:
           java-version: '21'
 
       - name: Set up Gradle (with caching)
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
 
       - name: Accept Android SDK licenses & install components
         run: |
@@ -45,7 +45,7 @@ jobs:
 
       - name: Upload test reports (on failure)
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: SpendWise-test-reports
           path: app/build/reports/tests/
@@ -76,7 +76,7 @@ jobs:
         run: ./gradlew assembleDebug assembleRelease
 
       - name: Upload APK artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: SpendWise-apks
           path: |
