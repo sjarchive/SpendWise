@@ -205,7 +205,10 @@ class CategoriesViewModel @Inject constructor(
             // move them to categoryId = 1 ("Food", an EXPENSE category) — which
             // would corrupt INCOME transactions' categories.
             val fallbackName = if (target.type == TransactionType.INCOME) "Other Income" else "Other"
-            val fallback = financeRepository.getCategoryByName(fallbackName)
+            // Type-aware lookup: the UNIQUE(name, type) index lets users create
+            // e.g. an income category also named "Other", and a name-only search
+            // could reassign transactions into the wrong type's category.
+            val fallback = financeRepository.getCategoryByName(fallbackName, target.type)
                 ?: financeRepository.getCategoriesByType(target.type).firstOrNull()?.firstOrNull()
             if (fallback != null && fallback.id != target.id) {
                 financeRepository.reassignTransactionCategory(

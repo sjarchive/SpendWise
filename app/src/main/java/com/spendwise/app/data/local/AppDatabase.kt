@@ -42,13 +42,25 @@ abstract class AppDatabase : RoomDatabase() {
                 .addCallback(object : Callback() {
                     override fun onCreate(db: SupportSQLiteDatabase) {
                         super.onCreate(db)
-                        // Seed default categories directly upon database creation
+                        // Seed default categories directly upon database creation.
+                        // Bound args instead of string interpolation: seed values
+                        // are internal constants today, but an apostrophe in any
+                        // future default name would break the SQL and crash first
+                        // launch — binding makes that impossible.
                         DefaultCategories.allDefaultCategories.forEach { category ->
                             db.execSQL(
                                 """
                                 INSERT OR IGNORE INTO categories (id, name, icon, color, isDefault, type)
-                                VALUES (${category.id}, '${category.name}', '${category.icon}', ${category.color}, ${if (category.isDefault) 1 else 0}, '${category.type.name}')
-                                """.trimIndent()
+                                VALUES (?, ?, ?, ?, ?, ?)
+                                """.trimIndent(),
+                                arrayOf(
+                                    category.id,
+                                    category.name,
+                                    category.icon,
+                                    category.color,
+                                    if (category.isDefault) 1 else 0,
+                                    category.type.name
+                                )
                             )
                         }
                     }

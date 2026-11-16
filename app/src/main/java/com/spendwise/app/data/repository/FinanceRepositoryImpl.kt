@@ -95,9 +95,9 @@ class FinanceRepositoryImpl @Inject constructor(
             categoryDao.deleteCustomCategoryById(id)
         }
 
-    override suspend fun getCategoryByName(name: String): CategoryEntity? =
+    override suspend fun getCategoryByName(name: String, type: TransactionType): CategoryEntity? =
         withContext(ioDispatcher) {
-            categoryDao.getCategoryByName(name)
+            categoryDao.getCategoryByName(name, type)
         }
 
     // --- Transactions ---
@@ -212,14 +212,18 @@ class FinanceRepositoryImpl @Inject constructor(
             if (count == 0) {
                 categoryDao.insertCategories(DefaultCategories.allDefaultCategories)
             } else {
-                val freelance = categoryDao.getCategoryByName("Freelance")
+                // Legacy 'Freelance' category could exist as INCOME or EXPENSE —
+                // check both types explicitly now that the name lookup is
+                // type-aware (LIMIT 1 previously returned only one of them).
+                val freelance = categoryDao.getCategoryByName("Freelance", TransactionType.INCOME)
+                    ?: categoryDao.getCategoryByName("Freelance", TransactionType.EXPENSE)
                 if (freelance != null) {
                     // The categories table has a UNIQUE(name, type) index. Renaming
                     // 'Freelance' would violate it (and crash) if the user already
                     // has their own 'Pocket Money' category of the same type, so
                     // skip the rename in that case and keep 'Freelance' as-is.
-                    val conflicting = categoryDao.getCategoryByName("Pocket Money")
-                    val hasConflict = conflicting != null && conflicting.type == freelance.type
+                    val conflicting = categoryDao.getCategoryByName("Pocket Money", freelance.type)
+                    val hasConflict = conflicting != null
                     if (!hasConflict) {
                         categoryDao.updateCategory(
                             freelance.copy(name = "Pocket Money", icon = "savings")

@@ -48,6 +48,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -71,6 +72,9 @@ import com.spendwise.app.ui.util.CsvExportHelper
 import com.spendwise.app.ui.util.DateUtils
 import com.spendwise.app.ui.viewmodel.BackupRestoreUiState
 import com.spendwise.app.ui.viewmodel.BackupRestoreViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -83,6 +87,7 @@ fun BackupRestoreScreen(
     val context = LocalContext.current
     val transactions by viewModel.allTransactions.collectAsStateWithLifecycle()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val exportScope = rememberCoroutineScope()
 
     // File picker for CSV documents
     val csvPickerLauncher = rememberLauncherForActivityResult(
@@ -98,19 +103,27 @@ fun BackupRestoreScreen(
         contract = ActivityResultContracts.CreateDocument("text/csv")
     ) { uri: Uri? ->
         if (uri != null) {
-            val success = CsvExportHelper.writeCsvToUri(context, uri, transactions)
-            if (success) {
-                Toast.makeText(
-                    context,
-                    "Saved ${transactions.size} transactions to device successfully",
-                    Toast.LENGTH_LONG
-                ).show()
-            } else {
-                Toast.makeText(
-                    context,
-                    "Failed to save CSV file",
-                    Toast.LENGTH_SHORT
-                ).show()
+            // Write OFF the main thread: generateCsv plus the ContentResolver
+            // copy block long enough on large exports to freeze the UI (ANR
+            // risk) — the old code wrote the whole file synchronously inside
+            // this callback. The Toast runs back on Main via exportScope.
+            exportScope.launch {
+                val success = withContext(Dispatchers.IO) {
+                    CsvExportHelper.writeCsvToUri(context, uri, transactions)
+                }
+                if (success) {
+                    Toast.makeText(
+                        context,
+                        "Saved ${transactions.size} transactions to device successfully",
+                        Toast.LENGTH_LONG
+                    ).show()
+                } else {
+                    Toast.makeText(
+                        context,
+                        "Failed to save CSV file",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
             }
         }
     }

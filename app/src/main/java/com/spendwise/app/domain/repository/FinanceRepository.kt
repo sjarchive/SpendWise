@@ -58,7 +58,7 @@ interface FinanceRepository {
     suspend fun deleteBudgetById(id: Long)
 
     // Category query
-    suspend fun getCategoryByName(name: String): CategoryEntity?
+    suspend fun getCategoryByName(name: String, type: TransactionType): CategoryEntity?
 
     // Seeding check
     suspend fun ensureDefaultCategoriesSeeded()

@@ -24,8 +24,14 @@ interface CategoryDao {
     @Query("SELECT * FROM categories WHERE id = :id")
     suspend fun getCategoryByIdSuspend(id: Long): CategoryEntity?
 
-    @Query("SELECT * FROM categories WHERE name = :name LIMIT 1")
-    suspend fun getCategoryByName(name: String): CategoryEntity?
+    /**
+     * Type-aware name lookup. The UNIQUE(name, type) index allows the same
+     * name to exist for EXPENSE and INCOME, so a name-only search could return
+     * the wrong type's row (e.g. an income "Other" hijacking the delete
+     * fallback) and move transactions into a category of the wrong type.
+     */
+    @Query("SELECT * FROM categories WHERE name = :name AND type = :type LIMIT 1")
+    suspend fun getCategoryByName(name: String, type: TransactionType): CategoryEntity?
 
     @Query("SELECT COUNT(*) FROM categories")
     suspend fun getCategoryCount(): Int

@@ -37,34 +37,38 @@ fun AnimatedAmountText(
 ) {
     var versionSeen by rememberSaveable { mutableLongStateOf(dataVersion) }
     var previousAmount by rememberSaveable { mutableDoubleStateOf(amount) }
-    val animatedAmount = remember { Animatable(amount.toFloat()) }
+    // Animate a 0..1 progress Float and interpolate the amounts in Double.
+    // Animating the amount itself as a Float loses precision above ~16.7M
+    // (Float mantissa is 24-bit), so a 99,999,999.99 balance counted up as
+    // 100,000,000 and visibly snapped at the end of the animation.
+    val progress = remember { Animatable(1f) }
 
     LaunchedEffect(dataVersion) {
         // Tab switch or initial composition: do not run the counter animation
         if (dataVersion == versionSeen) {
             previousAmount = amount
-            animatedAmount.snapTo(amount.toFloat())
+            progress.snapTo(1f)
             return@LaunchedEffect
         }
 
         // Data actually changed (add / edit / delete transaction): run the counter animation!
-        val startVal = previousAmount.toFloat()
+        if (progress.isRunning) progress.stop()
+        progress.snapTo(0f)
         versionSeen = dataVersion
-        previousAmount = amount
-
-        if (animatedAmount.isRunning) animatedAmount.stop()
-        animatedAmount.snapTo(startVal)
-        animatedAmount.animateTo(
-            targetValue = amount.toFloat(),
+        progress.animateTo(
+            targetValue = 1f,
             animationSpec = tween(
                 durationMillis = animationDurationMillis,
                 easing = FastOutSlowInEasing
             )
         )
+        // Animation finished: the counter now sits exactly on the new amount.
+        previousAmount = amount
     }
 
-    val displayValue = if (animatedAmount.isRunning) {
-        animatedAmount.value.toDouble()
+    val displayValue = if (progress.isRunning) {
+        // Interpolate in Double between the last settled value and the target.
+        previousAmount + (amount - previousAmount) * progress.value.toDouble()
     } else {
         amount
     }
