@@ -65,6 +65,32 @@ over USB debugging — the same one-click loop AI Studio provided.
    ```
    (On Windows, put the whole command on one line.)
 
+### Building a signed release APK locally
+
+Local release builds are fully supported — they use the **same stable upload
+key** as CI, so a locally built release APK can update-over-install an
+existing release install (unlike debug builds).
+
+1. **Get the upload keystore** (`my-upload-key.jks` — the same key CI uses via
+   the `ANDROID_KEYSTORE_B64` secret). Put it anywhere; the default lookup path
+   is the **repo root** as `my-upload-key.jks`. Never commit it.
+2. **Export the signing env vars** (the key alias is fixed as `upload`):
+   ```bash
+   export KEYSTORE_PATH="$PWD/my-upload-key.jks"   # omit if using the repo-root default
+   export STORE_PASSWORD="your-store-password"
+   export KEY_PASSWORD="your-key-password"
+   ```
+3. **Build or install:**
+   ```bash
+   ./gradlew assembleRelease    # output: app/build/outputs/apk/release/app-release.apk
+   ./gradlew installRelease     # builds + installs the signed release APK over USB
+   ```
+
+> **Keep the keystore safe:** if `my-upload-key.jks` is lost, there is no way
+> to update existing installs — new builds would require uninstalling first.
+> CI remains the source of truth for *published* GitHub Releases; a local
+> release build is simply the same signed APK produced on your machine.
+
 ### Day-to-day testing loop
 
 **Android Studio (easiest):** select your phone in the device dropdown → press
@@ -86,12 +112,14 @@ adb logcat --pid=$(adb shell pidof com.spendwise.app)
   secrets are needed** for testing. A debug build cannot update-over-install the
   **release** APK (different signing keys) — if the release APK is installed,
   uninstall it first.
-- Local **release** builds require `KEYSTORE_PATH`, `STORE_PASSWORD`, `KEY_PASSWORD`
-  environment variables — leave release/signing to CI.
+- Local **release** builds use the exact same signing setup as CI
+  (`KEYSTORE_PATH`, `STORE_PASSWORD`, `KEY_PASSWORD` + the `upload` alias) —
+  see *Building a signed release APK locally* above.
 - Wireless debugging (Android 11+) works too: Developer options →
   **Wireless debugging** → pair with your computer.
-- CI (`.github/workflows/build.yml`) remains the source of truth for signed release
-  APKs; local builds are for day-to-day testing only.
+- CI (`.github/workflows/build.yml`) remains the source of truth for **published**
+  Releases, but local builds cover both roles: debug for day-to-day testing and
+  signed release APKs (same upload key, update-over-install compatible).
 - **Releases are automatic — no tag pushing:** bump `versionCode`/`versionName` in
   `app/build.gradle.kts`, push to `main`, and the same CI run tests, builds, and
   publishes the GitHub Release (creating the `v*` tag for you) if that version
