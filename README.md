@@ -74,6 +74,27 @@ existing release install (unlike debug builds).
 1. **Get the upload keystore** (`my-upload-key.jks` — the same key CI uses via
    the `ANDROID_KEYSTORE_B64` secret). Put it anywhere; the default lookup path
    is the **repo root** as `my-upload-key.jks`. Never commit it.
+
+   GitHub secrets are **write-only** — they can never be read back via CLI or
+   API — so where the keystore comes from depends on who you are:
+   - **Repo owner:** use your backup of the original file (the one generated
+     when the secret was first created). Lost it? It can still be recovered
+     *inside* GitHub Actions: add a one-off `workflow_dispatch` workflow that
+     decodes `ANDROID_KEYSTORE_B64` and uploads it as a short-retention
+     artifact, run it, download the artifact, then **delete the workflow and
+     artifact immediately**.
+   - **Everyone else (collaborators / forks):** the upload keystore is **not
+     accessible** — secrets don't exist on forks and can't be read by
+     collaborators. Two options: use **debug** builds for testing, or generate
+     **your own** keystore and point `KEYSTORE_PATH` at it:
+     ```bash
+     # alias MUST be `upload` — it is hardcoded in app/build.gradle.kts
+     keytool -genkeypair -v -keystore my-release.jks -alias upload \
+       -keyalg RSA -keysize 2048 -validity 10000
+     ```
+     Your release APK will build and run fine, but it is signed with a
+     different key — it installs fresh and **cannot** update-over-install the
+     official release APK.
 2. **Export the signing env vars** (the key alias is fixed as `upload`):
    ```bash
    export KEYSTORE_PATH="$PWD/my-upload-key.jks"   # omit if using the repo-root default
